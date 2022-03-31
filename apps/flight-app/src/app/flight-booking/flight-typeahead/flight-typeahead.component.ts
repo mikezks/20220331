@@ -1,5 +1,8 @@
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, share, Subscription, tap, timer } from 'rxjs';
+import { FormControl } from '@angular/forms';
+import { Flight } from '@flight-workspace/flight-lib';
+import { debounceTime, delay, distinctUntilChanged, EMPTY, filter, map, Observable, of, share, Subscription, switchMap, tap, timer, withLatestFrom } from 'rxjs';
 
 @Component({
   selector: 'flight-workspace-flight-typeahead',
@@ -13,10 +16,63 @@ export class FlightTypeaheadComponent implements OnInit, OnDestroy {
   );
   subscription = new Subscription();
 
-  constructor() { }
+  control = new FormControl();
+  flights$: Observable<Flight[]> = this.getFlightsStream$();
+  loading = false;
+
+  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
-    this.rxjsDemo();
+    // this.rxjsDemo();
+  }
+
+  getFlightsStream$(): Observable<Flight[]> {
+    const state$ = of({
+      city: 'Berlin'
+    });
+
+    /**
+     * Stream 1: Input control -> value changes
+     * - Trigger
+     * - No Data Provider
+     */
+    return this.control.valueChanges.pipe(
+      // Get additional state
+      // withLatestFrom(state$),
+      // Transformation
+      // map(([, state]) => state.city),
+      // Filtering START
+      filter(city => city.length > 2),
+      debounceTime(300),
+      distinctUntilChanged(),
+      // Filtering END
+      // Side-Effect
+      tap(() => this.loading = true),
+      /**
+       * Stream 2: Backend HTTP call -> Array of Flights
+       * - Data Provider
+       */
+      // delay(2_000),
+      switchMap(city => this.load(city)),
+      // Side-Effect
+      tap(() => this.loading = false)
+    );
+  }
+
+  /**
+   * Stream 2: Backend HTTP call -> Array of Flights
+   * - Data Provider
+   */
+  load(from: string): Observable<Flight[]> {
+    const url = "http://www.angular.at/api/flight";
+
+    const params = new HttpParams()
+                        .set('from', from);
+
+    const headers = new HttpHeaders()
+                        .set('Accept', 'application/json');
+
+    return this.http.get<Flight[]>(url, {params, headers});
   }
 
   rxjsDemo(): void {
