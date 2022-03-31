@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Flight } from '@flight-workspace/flight-lib';
-import { debounceTime, delay, distinctUntilChanged, EMPTY, filter, map, Observable, of, share, Subscription, switchMap, tap, timer, withLatestFrom } from 'rxjs';
+import { catchError, debounceTime, delay, distinctUntilChanged, EMPTY, filter, iif, map, Observable, of, share, Subscription, switchMap, tap, timer, withLatestFrom } from 'rxjs';
 
 @Component({
   selector: 'flight-workspace-flight-typeahead',
@@ -42,7 +42,7 @@ export class FlightTypeaheadComponent implements OnInit, OnDestroy {
       // Transformation
       // map(([, state]) => state.city),
       // Filtering START
-      filter(city => city.length > 2),
+      // filter(city => city.length > 2),
       debounceTime(300),
       distinctUntilChanged(),
       // Filtering END
@@ -53,7 +53,13 @@ export class FlightTypeaheadComponent implements OnInit, OnDestroy {
        * - Data Provider
        */
       // delay(2_000),
-      switchMap(city => this.load(city)),
+      switchMap(city => iif(
+        () => city.length > 2,
+        this.load(city).pipe(
+          catchError(() => of([]))
+        ),
+        of([])
+      )),
       // Side-Effect
       tap(() => this.loading = false)
     );
@@ -85,3 +91,13 @@ export class FlightTypeaheadComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 }
+
+/*
+const flight = {
+  id: 0,
+  from: { value: 'Graz'},
+  to: 'London'
+};
+
+const { id, from: { value } } = flight;
+ */
