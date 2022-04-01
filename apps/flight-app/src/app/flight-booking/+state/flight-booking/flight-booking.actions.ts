@@ -12,3 +12,8 @@ export class FlightsLoad {
     public to: string,
     public urgent: boolean) { }
 }
+
+export class FlightUpdate {
+  public static readonly type = '[FlightBooking] Flight update';
+  constructor(public flight: Flight) { }
+}

@@ -4,7 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { Flight, FlightService } from '@flight-workspace/flight-lib';
 import { Select, Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
-import { FlightsLoad } from '../+state/flight-booking/flight-booking.actions';
+import { FlightsLoad, FlightUpdate } from '../+state/flight-booking/flight-booking.actions';
 import { FlightBookingState } from '../+state/flight-booking/flight-booking.state';
 
 @Component({
@@ -43,8 +43,18 @@ export class FlightSearchComponent implements OnInit {
     );
   }
 
-  delay(): void {
-    this.flightService.delay();
+  delay(flight: Flight): void {
+    this.store.dispatch(
+      new FlightUpdate({
+        ...flight,
+        date: addMinutesToDate(flight.date, 15).toISOString(),
+        delayed: true
+      })
+    );
   }
-
 }
+
+export const addMinutesToDate = (date: Date | string, minutes: number): Date => {
+  const dateObj = date instanceof Date ? date : new Date(date);
+  return new Date(dateObj.getTime() + minutes * 60 * 1_000);
+};

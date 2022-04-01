@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Flight, FlightService } from '@flight-workspace/flight-lib';
 import { State, Action, Selector, StateContext } from '@ngxs/store';
+import { patch, updateItem } from '@ngxs/store/operators';
 import { catchError, EMPTY, Observable, switchMap } from 'rxjs';
-import { FlightsLoad, FlightsLoaded } from './flight-booking.actions';
+import { FlightsLoad, FlightsLoaded, FlightUpdate } from './flight-booking.actions';
 
 export interface FlightBookingStateModel {
   flights: Flight[];
@@ -47,5 +48,19 @@ export class FlightBookingState {
     ctx: StateContext<FlightBookingStateModel>,
     { flights }: FlightsLoaded) {
     ctx.patchState({ flights });
+  }
+
+  @Action(FlightUpdate)
+  public updateFlight(
+    ctx: StateContext<FlightBookingStateModel>,
+    { flight }: FlightUpdate) {
+    ctx.setState(
+      patch({
+        flights: updateItem(
+          i => i?.id === flight.id,
+          flight
+        )
+      })
+    );
   }
 }
