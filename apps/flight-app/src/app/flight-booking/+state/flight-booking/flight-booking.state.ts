@@ -1,6 +1,8 @@
-import { Flight } from '@flight-workspace/flight-lib';
+import { Injectable } from '@angular/core';
+import { Flight, FlightService } from '@flight-workspace/flight-lib';
 import { State, Action, Selector, StateContext } from '@ngxs/store';
-import { FlightsLoaded } from './flight-booking.actions';
+import { catchError, EMPTY, Observable, switchMap } from 'rxjs';
+import { FlightsLoad, FlightsLoaded } from './flight-booking.actions';
 
 export interface FlightBookingStateModel {
   flights: Flight[];
@@ -12,7 +14,10 @@ export interface FlightBookingStateModel {
     flights: []
   }
 })
+@Injectable()
 export class FlightBookingState {
+
+  constructor(private flightService: FlightService) {}
 
   @Selector()
   public static getState(state: FlightBookingStateModel) {
@@ -22,6 +27,19 @@ export class FlightBookingState {
   @Selector()
   public static getFlights(state: FlightBookingStateModel) {
     return state.flights;
+  }
+
+  @Action(FlightsLoad)
+  public loadFlights(
+    ctx: StateContext<FlightBookingStateModel>,
+    { from, to, urgent }: FlightsLoad): Observable<void> {
+
+    return this.flightService.find(from, to, urgent).pipe(
+      switchMap(flights => ctx.dispatch(
+        new FlightsLoaded(flights)
+      )),
+      catchError(() => EMPTY)
+    );
   }
 
   @Action(FlightsLoaded)
